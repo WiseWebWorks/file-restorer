@@ -4,6 +4,9 @@ import net.wisefam.data.FoundFile;
 import net.wisefam.data.FoundFileRepository;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOCase;
+import org.apache.commons.io.filefilter.DirectoryFileFilter;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,15 +14,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.stream.Stream;
 
 @Component
 public class FileCopier implements CommandLineRunner {
@@ -57,35 +54,42 @@ public class FileCopier implements CommandLineRunner {
 
     }
 
-    private void addAllFilesRecursively(File directory) throws IOException {
-        try (Stream<Path> stream = Files.find(directory.toPath(), Integer.MAX_VALUE,
-                (path, attr) ->
-                        attr.isRegularFile() && StringUtils.endsWithIgnoreCase(path.toString(), ENCRYPTED_FILE_EXT)
-        )) {
-            stream.forEach(path -> {
-                File file = path.toFile();
-                String directoryPath = path.getParent().toString();
-                String currentFileName = path.getFileName().toString();
+    private void addAllFilesRecursively(File directory) {
+        File[] files = directory.listFiles(ENCRYPTED_FILES_FILTER);
+        if (files != null) {
+            log.info("Checking directory {}", directory.getPath());
+            for (File file : files) {
+                String currentFileName = file.getName();
                 String actualFileName = StringUtils.removeEndIgnoreCase(currentFileName, ENCRYPTED_FILE_EXT);
-                File unencryptedFile = new File(directoryPath, actualFileName);
+                File unencryptedFile = new File(directory, actualFileName);
                 String extension = StringUtils.lowerCase(FilenameUtils.getExtension(actualFileName));
-                boolean needsRestored = !unencryptedFile.exists() || unencryptedFile.lastModified() == file.lastModified();
+                boolean matchedExists = unencryptedFile.exists();
 
-                FoundFile foundFile = foundFileRepository.findByPathAndFileNameAndComputerName(directoryPath, actualFileName, COMPUTER_NAME);
+                String filePath = file.getParent();
+                FoundFile foundFile = foundFileRepository.findByPathAndFileNameAndComputerName(filePath, actualFileName, COMPUTER_NAME);
                 if (foundFile == null) {
-                    foundFile = new FoundFile(directoryPath, actualFileName, extension, file.lastModified(), COMPUTER_NAME, needsRestored);
+                    foundFile = new FoundFile(filePath, actualFileName, extension, file.lastModified(), COMPUTER_NAME);
                 }
-                foundFile.setByteCount(file.length());
-                String sha1hash;
-                try (FileInputStream fileInputStream = new FileInputStream(file)) {
-                    sha1hash = DigestUtils.sha1Hex(fileInputStream);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                foundFile.setMatchedExists(matchedExists);
+                if (matchedExists) {
+                    foundFile.setMatchedByteCount(unencryptedFile.length());
+                    String sha1hash;
+                    try (FileInputStream fileInputStream = new FileInputStream(unencryptedFile)) {
+                        sha1hash = DigestUtils.sha1Hex(fileInputStream);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    foundFile.setMatchedSha1hash(sha1hash);
                 }
-                foundFile.setSha1hash(sha1hash);
                 foundFile = foundFileRepository.save(foundFile);
                 log.info("Found file {}", foundFile);
-            });
+            }
+        }
+        File[] subdirectories = directory.listFiles((FileFilter) DirectoryFileFilter.INSTANCE);
+        if (subdirectories != null) {
+            for (File subDirectory : subdirectories) {
+                addAllFilesRecursively(subDirectory);
+            }
         }
     }
 

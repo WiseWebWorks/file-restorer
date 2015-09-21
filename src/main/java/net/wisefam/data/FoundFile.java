@@ -25,22 +25,23 @@ public class FoundFile {
     private ZonedDateTime modifiedTime;
     private long modifiedTimestamp;
     private String computerName;
-    private boolean needsRestored;
-    private long byteCount;
+    private boolean matchedExists;
+    private long matchedByteCount;
     @Column(length = 40)
-    private String sha1hash;
+    private String matchedSha1hash;
+    private Boolean needsRestored;
 
     protected FoundFile() {
     }
 
-    public FoundFile(String path, String fileName, String extension, long modifiedTimestamp, String computerName, boolean needsRestored) {
+    public FoundFile(String path, String fileName, String extension, long modifiedTimestamp, String computerName) {
         this.path = path;
         this.fileName = fileName;
         this.extension = extension;
         this.modifiedTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(modifiedTimestamp), ZoneId.systemDefault()).withZoneSameInstant(ZoneOffset.UTC);
         this.modifiedTimestamp = modifiedTimestamp;
         this.computerName = computerName;
-        this.needsRestored = needsRestored;
+        this.needsRestored = null;
     }
 
     @Override
@@ -109,27 +110,36 @@ public class FoundFile {
         this.computerName = computerName;
     }
 
-    public boolean isNeedsRestored() {
+    public boolean isMatchedExists() {
+        return matchedExists;
+    }
+
+    public void setMatchedExists(boolean matchedExists) {
+        this.matchedExists = matchedExists;
+    }
+
+    public long getMatchedByteCount() {
+        return matchedByteCount;
+    }
+
+    public void setMatchedByteCount(long matchedByteCount) {
+        this.matchedByteCount = matchedByteCount;
+    }
+
+    public String getMatchedSha1hash() {
+        return matchedSha1hash;
+    }
+
+    public void setMatchedSha1hash(String matchedSha1hash) {
+        this.matchedSha1hash = matchedSha1hash;
+    }
+
+    public Boolean getNeedsRestored() {
         return needsRestored;
     }
 
-    public void setNeedsRestored(boolean needsRestored) {
+    public void setNeedsRestored(Boolean needsRestored) {
         this.needsRestored = needsRestored;
     }
 
-    public long getByteCount() {
-        return byteCount;
-    }
-
-    public void setByteCount(long byteCount) {
-        this.byteCount = byteCount;
-    }
-
-    public String getSha1hash() {
-        return sha1hash;
-    }
-
-    public void setSha1hash(String sha1hash) {
-        this.sha1hash = sha1hash;
-    }
 }
