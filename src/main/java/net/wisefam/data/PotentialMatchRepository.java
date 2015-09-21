@@ -6,5 +6,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PotentialMatchRepository extends CrudRepository<PotentialMatch, Long> {
 
+    PotentialMatch findByBackupFileAndFoundFile(BackupFile backupFile, FoundFile foundFile);
 
 }

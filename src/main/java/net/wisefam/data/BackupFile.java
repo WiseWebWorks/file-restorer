@@ -23,15 +23,16 @@ public class BackupFile {
     private String path;
     private String fileName;
     private String extension;
-    private ZonedDateTime modifiedTime;
-    private long modifiedTimestamp;
     private String computerName;
-    @Column(length = 40)
-    private String sha1hash;
     @Enumerated(EnumType.STRING)
     private BackupSource backupSource;
+    private ZonedDateTime modifiedTime;
+    private long modifiedTimestamp;
+    private long byteCount;
+    @Column(length = 40)
+    private String sha1hash;
 
-    protected BackupFile() {
+    private BackupFile() {
     }
 
     public BackupFile(String path, String fileName, String extension, long modifiedTimestamp, String computerName, BackupSource backupSource) {
@@ -51,7 +52,13 @@ public class BackupFile {
                 .append("path", path)
                 .append("fileName", fileName)
                 .append("computerName", computerName)
+                .append("backupSource", backupSource)
                 .toString();
+    }
+
+    public static enum BackupSource {
+        BackupPC,
+        ExternalHD
     }
 
     public long getId() {
@@ -86,6 +93,22 @@ public class BackupFile {
         this.extension = extension;
     }
 
+    public String getComputerName() {
+        return computerName;
+    }
+
+    public void setComputerName(String computerName) {
+        this.computerName = computerName;
+    }
+
+    public BackupSource getBackupSource() {
+        return backupSource;
+    }
+
+    public void setBackupSource(BackupSource backupSource) {
+        this.backupSource = backupSource;
+    }
+
     public ZonedDateTime getModifiedTime() {
         return modifiedTime;
     }
@@ -102,12 +125,12 @@ public class BackupFile {
         this.modifiedTimestamp = modifiedTimestamp;
     }
 
-    public String getComputerName() {
-        return computerName;
+    public long getByteCount() {
+        return byteCount;
     }
 
-    public void setComputerName(String computerName) {
-        this.computerName = computerName;
+    public void setByteCount(long byteCount) {
+        this.byteCount = byteCount;
     }
 
     public String getSha1hash() {
@@ -116,18 +139,5 @@ public class BackupFile {
 
     public void setSha1hash(String sha1hash) {
         this.sha1hash = sha1hash;
-    }
-
-    public BackupSource getBackupSource() {
-        return backupSource;
-    }
-
-    public void setBackupSource(BackupSource backupSource) {
-        this.backupSource = backupSource;
-    }
-
-    public static enum BackupSource {
-        BackupPC,
-        ExternalHD
     }
 }

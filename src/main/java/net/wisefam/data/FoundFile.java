@@ -31,7 +31,7 @@ public class FoundFile {
     private String matchedSha1hash;
     private Boolean needsRestored;
 
-    protected FoundFile() {
+    private FoundFile() {
     }
 
     public FoundFile(String path, String fileName, String extension, long modifiedTimestamp, String computerName) {

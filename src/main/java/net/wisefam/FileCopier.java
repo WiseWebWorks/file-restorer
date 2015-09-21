@@ -44,6 +44,8 @@ public class FileCopier implements CommandLineRunner {
     @Autowired
     private PotentialMatchRepository potentialMatchRepository;
 
+    private int backupFileCount = 0;
+
     private static String getComputerName() {
         try {
             return StringUtils.lowerCase(StringUtils.defaultIfBlank(StringUtils.defaultIfBlank(System.getenv("COMPUTERNAME"), System.getenv("HOSTNAME")), InetAddress.getLocalHost().getHostName()));
@@ -179,7 +181,6 @@ public class FileCopier implements CommandLineRunner {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-                log.info("Found backup file {} for {}", backupFile, foundFile);
 
                 String backupFileName = backupFile.getName();
                 String newExtension = FilenameUtils.getExtension(backupFileName);
@@ -191,17 +192,28 @@ public class FileCopier implements CommandLineRunner {
                     foundFile = foundFileRepository.save(foundFile);
                 }
 
-                String backupFilePath = backupFile.getPath();
+                String backupFilePath = backupFile.getParent();
                 BackupFile backupFileDb = backupFileRepository.findByPathAndFileNameAndComputerNameAndBackupSource(backupFilePath, backupFileName, computerName, BackupFile.BackupSource.BackupPC);
                 if (backupFileDb == null) {
                     backupFileDb = new BackupFile(backupFilePath, backupFileName, newExtension, backupFile.lastModified(), computerName, BackupFile.BackupSource.BackupPC);
+                    log.info("Saved backup file #{} {} for {}", backupFileCount, backupFileDb, foundFile);
+                } else {
+                    log.info("Found backup file #{} {} for {}", backupFileCount, backupFileDb, foundFile);
                 }
-                if (backupFileDb.getSha1hash() == null) {
-                    backupFileDb.setSha1hash(getSha1Hash(backupFile));
-                }
+//                if (backupFileDb.getSha1hash() == null) {
+//                    backupFileDb.setSha1hash(getSha1Hash(backupFile));
+//                    backupFileDb.setByteCount(0L);
+//                }
                 backupFileDb = backupFileRepository.save(backupFileDb);
+                backupFileCount++;
 
-                potentialMatchRepository.save(new PotentialMatch(backupFileDb, foundFile));
+
+                PotentialMatch potentialMatch = potentialMatchRepository.findByBackupFileAndFoundFile(backupFileDb, foundFile);
+                if (potentialMatch == null) {
+                    potentialMatch = new PotentialMatch(backupFileDb, foundFile);
+                    potentialMatch = potentialMatchRepository.save(potentialMatch);
+                    log.info("Saved potential match {}", potentialMatch);
+                }
                 return backupFileDb;
             }
         }
@@ -220,7 +232,7 @@ public class FileCopier implements CommandLineRunner {
         }
         if (StringUtils.startsWith(decodedFileName, "/cygdrive/")) {
             String driveLetter = StringUtils.lowerCase(decodedFileName.substring(10, 11));
-            decodedFileName = driveLetter + ":\\" + decodedFileName.substring(12).replaceAll("/", "\\");
+            decodedFileName = driveLetter + ":\\" + decodedFileName.substring(12).replaceAll("/", "\\\\");
         }
         return decodedFileName;
     }
