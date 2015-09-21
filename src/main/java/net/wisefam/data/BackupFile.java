@@ -19,6 +19,7 @@ public class BackupFile {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;
+    @Column(length = 1000)
     private String path;
     private String fileName;
     private String extension;
@@ -27,17 +28,20 @@ public class BackupFile {
     private String computerName;
     @Column(length = 40)
     private String sha1hash;
+    @Enumerated(EnumType.STRING)
+    private BackupSource backupSource;
 
     protected BackupFile() {
     }
 
-    public BackupFile(String path, String fileName, String extension, long modifiedTimestamp, String computerName) {
+    public BackupFile(String path, String fileName, String extension, long modifiedTimestamp, String computerName, BackupSource backupSource) {
         this.path = path;
         this.fileName = fileName;
         this.extension = extension;
         this.modifiedTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(modifiedTimestamp), ZoneId.systemDefault()).withZoneSameInstant(ZoneOffset.UTC);
         this.modifiedTimestamp = modifiedTimestamp;
         this.computerName = computerName;
+        this.backupSource = backupSource;
     }
 
     @Override
@@ -112,5 +116,18 @@ public class BackupFile {
 
     public void setSha1hash(String sha1hash) {
         this.sha1hash = sha1hash;
+    }
+
+    public BackupSource getBackupSource() {
+        return backupSource;
+    }
+
+    public void setBackupSource(BackupSource backupSource) {
+        this.backupSource = backupSource;
+    }
+
+    public static enum BackupSource {
+        BackupPC,
+        ExternalHD
     }
 }

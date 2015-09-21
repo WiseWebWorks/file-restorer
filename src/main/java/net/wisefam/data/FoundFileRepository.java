@@ -10,6 +10,8 @@ public interface FoundFileRepository extends CrudRepository<FoundFile, Long> {
 
     List<FoundFile> findByFileName(String fileName);
 
+    List<FoundFile> findByComputerNameAndPathLike(String computerName, String path);
+
     FoundFile findByPathAndFileNameAndComputerName(String path, String fileName, String computerName);
 
 }
